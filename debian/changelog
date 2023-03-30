@@ -1,5 +1,86 @@
-template-repository (1.0-1) unstable; urgency=medium
+golang-golang-x-exp (0.0~git20221028.83b7d23-2) unstable; urgency=medium
+
+  * Team upload.
+  * Fix time regexp in slog test
+
+ -- Shengjing Zhu <zhsj@debian.org>  Sun, 30 Oct 2022 02:51:42 +0800
+
+golang-golang-x-exp (0.0~git20221028.83b7d23-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 0.0~git20221028.83b7d23
+  * debian/gbp.conf: Set debian-branch to debian/sid for DEP-14 conformance
+  * Bump build-dependency golang-any (>= 2:1.18~) as per go.mod
+  * Reorder fields in debian/control and debian/copyright
+  * Drop -dev package unneeded dependency on ${shlibs:Depends}
+  * Replace Built-Using field with Static-Built-Using
+  * Use dh-sequence-golang instead of dh-golang and --with=golang
+  * debian/rules: Invoke dh with --builddirectory=_build
+  * Bump Standards-Version to 4.6.1 (no change)
+  * Exclude slog/benchmarks/zapbenchmarks to avoid extra dependencies
+
+ -- Anthony Fok <foka@debian.org>  Fri, 28 Oct 2022 09:30:38 -0600
+
+golang-golang-x-exp (0.0~git20220328.053ad81-1) unstable; urgency=medium
+
+  * Team upload.
+
+  [ Tianon Gravi ]
+  * Remove self from Uploaders
+
+  [ Shengjing Zhu ]
+  * New upstream snapshot
+  * Disable pgpmode in uscan watch file
+  * Simplify d/rules
+  * Update Section to golang
+  * Update maintainer address to team+pkg-go@tracker.debian.org
+  * Bump debhelper-compat to 13
+  * Replace golang-go with golang-any
+  * Update Standards-Version to 4.6.0 (no changes)
+  * Add autopkgtest-pkg-go
+  * Add Rules-Requires-Root
+  * Add Multi-Arch hint
+  * Exclude more unused packages
+  * Refresh patches
+  * Install typeparams/go.mod as well
+
+ -- Shengjing Zhu <zhsj@debian.org>  Thu, 31 Mar 2022 01:39:09 +0800
+
+golang-golang-x-exp (0.0~git20181112.a3060d4-2) unstable; urgency=medium
+
+  * Team upload
+  * Pick upstream patch to fix FTBFS (Closes: #918417)
+
+ -- Balint Reczey <rbalint@ubuntu.com>  Wed, 21 Oct 2020 15:28:43 +0200
+
+golang-golang-x-exp (0.0~git20181112.a3060d4-1) unstable; urgency=medium
+
+  [ Alexandre Viau ]
+  * Team upload.
+  * New upstream snapshot.
+  * Add watch file.
+  * Don't build cmd.
+
+  [ Jelmer Vernooĳ ]
+  * Change priority extra to priority optional.
+
+ -- Alexandre Viau <aviau@debian.org>  Wed, 21 Nov 2018 12:47:24 -0500
+
+golang-golang-x-exp (0.0~git20150826.1.eb7c1fa-2) unstable; urgency=medium
+
+  [ Paul Tagliamonte ]
+  * Team upload.
+  * Use a secure transport for the Vcs-Git and Vcs-Browser URL
+  * Remove Built-Using from arch:all -dev package
+
+  [ Alexandre Viau ]
+  * Point Vcs-* urls to salsa.debian.org.
+  * Use https copyright format url.
+
+ -- Alexandre Viau <aviau@debian.org>  Sun, 15 Apr 2018 12:20:13 -0400
+
+golang-golang-x-exp (0.0~git20150826.1.eb7c1fa-1) unstable; urgency=medium
 
   * Initial release
 
- -- Tsic404 <liuheng@deepin.org>  Sat, 28 Jan 2023 13:46:49 +0800
+ -- Tianon Gravi <tianon@debian.org>  Fri, 04 Sep 2015 13:17:54 -0700

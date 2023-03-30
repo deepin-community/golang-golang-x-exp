@@ -1,0 +1,22 @@
+From: Shengjing Zhu <zsj950618@gmail.com>
+Date: Sun, 30 Oct 2022 02:45:21 +0800
+Subject: slog: fix RFC3339 regexp when offset is positive
+
+Change-Id: I2f037bf3a211a8e969330e47fc0a2d499ec92f80
+---
+ slog/logger_test.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/slog/logger_test.go b/slog/logger_test.go
+index 4d171b4..2528064 100644
+--- a/slog/logger_test.go
++++ b/slog/logger_test.go
+@@ -17,7 +17,7 @@ import (
+ 	"time"
+ )
+ 
+-const timeRE = `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}(Z|-\d{2}:\d{2})`
++const timeRE = `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}(Z|[\+-]\d{2}:\d{2})`
+ 
+ func TestLogTextHandler(t *testing.T) {
+ 	var buf bytes.Buffer
