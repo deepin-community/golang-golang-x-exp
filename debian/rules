@@ -1,4 +1,18 @@
 #!/usr/bin/make -f
 
+export DH_GOLANG_INSTALL_EXTRA := \
+	typeparams/go.mod
+
+export DH_GOLANG_EXCLUDES := \
+	cmd \
+	errors \
+	event \
+	example \
+	jsonrpc2 \
+	shiny \
+	shootout \
+	slog/benchmarks/zapbenchmarks \
+	sumdb
+
 %:
-	dh $@
+	dh $@ --builddirectory=_build --buildsystem=golang

@@ -1,15 +1,59 @@
-Source: template-repository
-Section: unknown
+Source: golang-golang-x-exp
+Section: golang
 Priority: optional
-Maintainer: Tsic404 <liuheng@deepin.org>
-Build-Depends: debhelper (>= 11)
-Standards-Version: 4.1.3
-Homepage: https://github.com/deepin-community/template-repository
-#Vcs-Browser: https://salsa.debian.org/debian/deepin-community-template-repository
-#Vcs-Git: https://salsa.debian.org/debian/deepin-community-template-repository.git
+Maintainer: Debian Go Packaging Team <team+pkg-go@tracker.debian.org>
+Uploaders: Tim Potter <tpot@hpe.com>,
+Rules-Requires-Root: no
+Build-Depends: debhelper-compat (= 13),
+               dh-sequence-golang,
+               golang-any (>= 2:1.18~),
+Testsuite: autopkgtest-pkg-go
+Standards-Version: 4.6.1
+Homepage: https://golang.org/x/exp
+Vcs-Browser: https://salsa.debian.org/go-team/packages/golang-golang-x-exp
+Vcs-Git: https://salsa.debian.org/go-team/packages/golang-golang-x-exp.git
+XS-Go-Import-Path: golang.org/x/exp
 
-Package: template-repository
+Package: golang-golang-x-exp-dev
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends},
+Description: experimental and deprecated packages
+ This subrepository holds experimental and deprecated (in the "old" directory)
+ packages.
+ .
+ The idea for this subrepository originated as the "pkg/exp" directory of the
+ main repository, but its presence there made it unavailable to users of the
+ binary downloads of the Go installation. The subrepository has therefore been
+ created to make it possible to "go get" these packages.
+ .
+ Warning: Packages here are experimental and unreliable. Some may one day be
+ promoted to the main repository or other subrepository, or they may be modified
+ arbitrarily or even disappear altogether.
+ .
+ In short, code in this subrepository is not subject to the Go 1 compatibility
+ promise. (No subrepo is, but the promise is even more likely to be violated by
+ go.exp than the others.)
+ .
+ Caveat emptor.
+
+Package: ebnflint
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Static-Built-Using: ${misc:Static-Built-Using},
+Description: verifies EBNF productions are consistent and grammatically correct
+ Ebnflint verifies that EBNF productions are consistent and grammatically
+ correct. It reads them from an HTML document such as the Go specification.
+ .
+ Grammar productions are grouped in boxes demarcated by the HTML elements
+ .
+   <pre class="ebnf">
+   </pre>
+ .
+ Usage:
+ .
+   ebnflint [--start production] [file]
+ .
+ The --start flag specifies the name of the start production for the grammar; it
+ defaults to "Start".
