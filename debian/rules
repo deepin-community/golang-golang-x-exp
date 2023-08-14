@@ -11,7 +11,8 @@ export DH_GOLANG_EXCLUDES := \
 	jsonrpc2 \
 	shiny \
 	shootout \
-	slog/benchmarks/zapbenchmarks \
+	slog/benchmarks/zap_benchmarks \
+	slog/benchmarks/zerolog_benchmarks \
 	sumdb
 
 %:

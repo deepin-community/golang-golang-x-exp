@@ -5,8 +5,10 @@
 package slog
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync/atomic"
 )
 
@@ -14,16 +16,19 @@ import (
 // The higher the level, the more important or severe the event.
 type Level int
 
-// The level numbers below don't really matter too much. Any system can map them
-// to another numbering scheme if it wishes. We picked them to satisfy three
-// constraints.
+// Level numbers are inherently arbitrary,
+// but we picked them to satisfy three constraints.
+// Any system can map them to another numbering scheme if it wishes.
 //
 // First, we wanted the default level to be Info, Since Levels are ints, Info is
 // the default value for int, zero.
 //
-// Second, we wanted to make it easy to work with verbosities instead of levels.
-// Verbosities start at 0 corresponding to Info, and larger values are less severe
-// Negating a verbosity converts it into a Level.
+
+// Second, we wanted to make it easy to use levels to specify logger verbosity.
+// Since a larger level means a more severe event, a logger that accepts events
+// with smaller (or more negative) level means a more verbose logger. Logger
+// verbosity is thus the negation of event severity, and the default verbosity
+// of 0 accepts all events at least as severe as INFO.
 //
 // Third, we wanted some room between levels to accommodate schemes with named
 // levels between ours. For example, Google Cloud Logging defines a Notice level
@@ -37,10 +42,10 @@ type Level int
 //
 // Names for common levels.
 const (
-	DebugLevel Level = -4
-	InfoLevel  Level = 0
-	WarnLevel  Level = 4
-	ErrorLevel Level = 8
+	LevelDebug Level = -4
+	LevelInfo  Level = 0
+	LevelWarn  Level = 4
+	LevelError Level = 8
 )
 
 // String returns a name for the level.
@@ -50,8 +55,8 @@ const (
 // an integer is appended to the uppercased name.
 // Examples:
 //
-//	WarnLevel.String() => "WARN"
-//	(WarnLevel-2).String() => "WARN-2"
+//	LevelWarn.String() => "WARN"
+//	(LevelInfo+2).String() => "INFO+2"
 func (l Level) String() string {
 	str := func(base string, val Level) string {
 		if val == 0 {
@@ -61,17 +66,19 @@ func (l Level) String() string {
 	}
 
 	switch {
-	case l < InfoLevel:
-		return str("DEBUG", l-DebugLevel)
-	case l < WarnLevel:
-		return str("INFO", l)
-	case l < ErrorLevel:
-		return str("WARN", l-WarnLevel)
+	case l < LevelInfo:
+		return str("DEBUG", l-LevelDebug)
+	case l < LevelWarn:
+		return str("INFO", l-LevelInfo)
+	case l < LevelError:
+		return str("WARN", l-LevelWarn)
 	default:
-		return str("ERROR", l-ErrorLevel)
+		return str("ERROR", l-LevelError)
 	}
 }
 
+// MarshalJSON implements [encoding/json.Marshaler]
+// by quoting the output of [Level.String].
 func (l Level) MarshalJSON() ([]byte, error) {
 	// AppendQuote is sufficient for JSON-encoding all Level strings.
 	// They don't contain any runes that would produce invalid JSON
@@ -79,29 +86,108 @@ func (l Level) MarshalJSON() ([]byte, error) {
 	return strconv.AppendQuote(nil, l.String()), nil
 }
 
+// UnmarshalJSON implements [encoding/json.Unmarshaler]
+// It accepts any string produced by [Level.MarshalJSON],
+// ignoring case.
+// It also accepts numeric offsets that would result in a different string on
+// output. For example, "Error-8" would marshal as "INFO".
+func (l *Level) UnmarshalJSON(data []byte) error {
+	s, err := strconv.Unquote(string(data))
+	if err != nil {
+		return err
+	}
+	return l.parse(s)
+}
+
+// MarshalText implements [encoding.TextMarshaler]
+// by calling [Level.String].
+func (l Level) MarshalText() ([]byte, error) {
+	return []byte(l.String()), nil
+}
+
+// UnmarshalText implements [encoding.TextUnmarshaler].
+// It accepts any string produced by [Level.MarshalText],
+// ignoring case.
+// It also accepts numeric offsets that would result in a different string on
+// output. For example, "Error-8" would marshal as "INFO".
+func (l *Level) UnmarshalText(data []byte) error {
+	return l.parse(string(data))
+}
+
+func (l *Level) parse(s string) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("slog: level string %q: %w", s, err)
+		}
+	}()
+
+	name := s
+	offset := 0
+	if i := strings.IndexAny(s, "+-"); i >= 0 {
+		name = s[:i]
+		offset, err = strconv.Atoi(s[i:])
+		if err != nil {
+			return err
+		}
+	}
+	switch strings.ToUpper(name) {
+	case "DEBUG":
+		*l = LevelDebug
+	case "INFO":
+		*l = LevelInfo
+	case "WARN":
+		*l = LevelWarn
+	case "ERROR":
+		*l = LevelError
+	default:
+		return errors.New("unknown name")
+	}
+	*l += Level(offset)
+	return nil
+}
+
 // Level returns the receiver.
 // It implements Leveler.
 func (l Level) Level() Level { return l }
 
-// An AtomicLevel is a Level that can be read and written safely by multiple
-// goroutines.
-// The default value of AtomicLevel is InfoLevel.
-type AtomicLevel struct {
+// A LevelVar is a Level variable, to allow a Handler level to change
+// dynamically.
+// It implements Leveler as well as a Set method,
+// and it is safe for use by multiple goroutines.
+// The zero LevelVar corresponds to LevelInfo.
+type LevelVar struct {
 	val atomic.Int64
 }
 
-// Level returns r's level.
-func (a *AtomicLevel) Level() Level {
-	return Level(int(a.val.Load()))
+// Level returns v's level.
+func (v *LevelVar) Level() Level {
+	return Level(int(v.val.Load()))
 }
 
-// Set sets the receiver's level to l.
-func (a *AtomicLevel) Set(l Level) {
-	a.val.Store(int64(l))
+// Set sets v's level to l.
+func (v *LevelVar) Set(l Level) {
+	v.val.Store(int64(l))
 }
 
-func (a *AtomicLevel) String() string {
-	return fmt.Sprintf("AtomicLevel(%s)", a.Level())
+func (v *LevelVar) String() string {
+	return fmt.Sprintf("LevelVar(%s)", v.Level())
+}
+
+// MarshalText implements [encoding.TextMarshaler]
+// by calling [Level.MarshalText].
+func (v *LevelVar) MarshalText() ([]byte, error) {
+	return v.Level().MarshalText()
+}
+
+// UnmarshalText implements [encoding.TextUnmarshaler]
+// by calling [Level.UnmarshalText].
+func (v *LevelVar) UnmarshalText(data []byte) error {
+	var l Level
+	if err := l.UnmarshalText(data); err != nil {
+		return err
+	}
+	v.Set(l)
+	return nil
 }
 
 // A Leveler provides a Level value.
@@ -109,7 +195,7 @@ func (a *AtomicLevel) String() string {
 // As Level itself implements Leveler, clients typically supply
 // a Level value wherever a Leveler is needed, such as in HandlerOptions.
 // Clients who need to vary the level dynamically can provide a more complex
-// Leveler implementation such as *AtomicLevel.
+// Leveler implementation such as *LevelVar.
 type Leveler interface {
 	Level() Level
 }
