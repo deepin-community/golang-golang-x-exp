@@ -3,12 +3,13 @@ Section: golang
 Priority: optional
 Maintainer: Debian Go Packaging Team <team+pkg-go@tracker.debian.org>
 Uploaders: Tim Potter <tpot@hpe.com>,
+           Anthony Fok <foka@debian.org>,
 Rules-Requires-Root: no
 Build-Depends: debhelper-compat (= 13),
                dh-sequence-golang,
-               golang-any (>= 2:1.20~),
+               golang-any (>= 2:1.19~),
 Testsuite: autopkgtest-pkg-go
-Standards-Version: 4.6.1
+Standards-Version: 4.6.2
 Homepage: https://golang.org/x/exp
 Vcs-Browser: https://salsa.debian.org/go-team/packages/golang-golang-x-exp
 Vcs-Git: https://salsa.debian.org/go-team/packages/golang-golang-x-exp.git

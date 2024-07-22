@@ -53,7 +53,7 @@ func testModuleChanges(t *testing.T, x packagestest.Exporter) {
 		t.Fatal("expected some changes, but got none")
 	}
 	wanti := []string{
-		"Version: value changed from 1 to 2",
+		"./foo.Version: value changed from 1 to 2",
 		"package example.com/moda/foo/baz: removed",
 	}
 	sort.Strings(wanti)
@@ -66,7 +66,7 @@ func testModuleChanges(t *testing.T, x packagestest.Exporter) {
 	}
 
 	wantc := []string{
-		"Other: added",
+		"./foo.Other: added",
 		"package example.com/modb/bar: added",
 	}
 	sort.Strings(wantc)
@@ -80,43 +80,47 @@ func testModuleChanges(t *testing.T, x packagestest.Exporter) {
 }
 
 func TestChanges(t *testing.T) {
-	dir, err := os.MkdirTemp("", "apidiff_test")
+	testfiles, err := filepath.Glob(filepath.Join("testdata", "*.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir = filepath.Join(dir, "go")
-	wanti, wantc := splitIntoPackages(t, dir)
-	defer os.RemoveAll(dir)
-	sort.Strings(wanti)
-	sort.Strings(wantc)
+	for _, testfile := range testfiles {
+		name := strings.TrimSuffix(filepath.Base(testfile), ".go")
+		t.Run(name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "go")
+			wanti, wantc := splitIntoPackages(t, testfile, dir)
+			sort.Strings(wanti)
+			sort.Strings(wantc)
 
-	oldpkg, err := loadPackage(t, "apidiff/old", dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	newpkg, err := loadPackage(t, "apidiff/new", dir)
-	if err != nil {
-		t.Fatal(err)
-	}
+			oldpkg, err := loadPackage(t, "apidiff/old", dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			newpkg, err := loadPackage(t, "apidiff/new", dir)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	report := Changes(oldpkg.Types, newpkg.Types)
+			report := Changes(oldpkg.Types, newpkg.Types)
 
-	got := report.messages(false)
-	if diff := cmp.Diff(wanti, got); diff != "" {
-		t.Errorf("incompatibles: mismatch (-want, +got)\n%s", diff)
-	}
-	got = report.messages(true)
-	if diff := cmp.Diff(wantc, got); diff != "" {
-		t.Errorf("compatibles: mismatch (-want, +got)\n%s", diff)
+			got := report.messages(false)
+			if diff := cmp.Diff(wanti, got); diff != "" {
+				t.Errorf("incompatibles: mismatch (-want, +got)\n%s", diff)
+			}
+			got = report.messages(true)
+			if diff := cmp.Diff(wantc, got); diff != "" {
+				t.Errorf("compatibles: mismatch (-want, +got)\n%s", diff)
+			}
+		})
 	}
 }
 
-func splitIntoPackages(t *testing.T, dir string) (incompatibles, compatibles []string) {
+func splitIntoPackages(t *testing.T, file, dir string) (incompatibles, compatibles []string) {
 	// Read the input file line by line.
 	// Write a line into the old or new package,
 	// dependent on comments.
 	// Also collect expected messages.
-	f, err := os.Open("testdata/tests.go")
+	f, err := os.Open(file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,10 +146,21 @@ func splitIntoPackages(t *testing.T, dir string) (incompatibles, compatibles []s
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() {
+		if err := oldf.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
 	newf, err := os.Create(filepath.Join(newd, "new.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() {
+		if err := newf.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	wl := func(f *os.File, line string) {
 		if _, err := fmt.Fprintln(f, line); err != nil {
